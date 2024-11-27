@@ -10,6 +10,16 @@ const app = express();
 // Middleware for parsing JSON
 app.use(express.json());
 
+//config Express.js
+app.set('port', 3000);
+app.use((req, res, next) =>{
+    res.setHeader('Acess-Control-Allow-Origin', '*');
+    res.setHeader("Acess-Control-Allow-Credentials", "*");
+    res.setHeader("Acess-Control-Allow-Methods", "GET, HEAD, OPTIONS, POST, PUT");
+    res.setHeader("Acess-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
+    next();
+})
+
 // Set the static folder and port
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.set('port', 3000);
