@@ -42,6 +42,11 @@ MongoClient.connect(
   }
 );
 
+// Root endpoint
+app.get('/', (req, res) => {
+    res.send('Welcome to the Webstore API! Use endpoints like /collection/{collectionName}');
+});
+
 // Create a new document in a collection (Order Creation)
 app.post('/collection/orders', async (req, res, next) => {
     const order = req.body;
