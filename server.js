@@ -16,6 +16,17 @@ app.set('port', 3000);
 
 // Middleware for CORS
 app.use(cors());
+
+app.use('/image', (req, res) => {
+    const imagePath = path.join(__dirname, 'image', req.url);
+    fs.access(imagePath, fs.constants.F_OK, (err) => {
+        if (err) {
+            res.status(400).send({message: 'Image not found'});
+        } else {
+            res.sendFile(imagePath)
+        }
+    })
+})
 // Connect to MongoDB
 let db;
 MongoClient.connect(
@@ -30,22 +41,6 @@ MongoClient.connect(
     db = client.db('webstore');
   }
 );
-
-// Serve the main frontend page
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/lab.html'));
-});
-
-// Route to retrieve all products
-app.get('/products', (req, res, next) => {
-  db.collection('products')
-    .find({})
-    .toArray((err, results) => {
-      if (err) return next(err);
-      res.send(results);
-    });
-});
-
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
