@@ -52,15 +52,28 @@ MongoClient.connect(
   }
 );
 
-// Root endpoint
+app.get('/', (req, res, next) => {
+    res.send('select a collection, e.g., /collection/messages')
+})
+
+app.param('collectionName', (req, res, next, collectionName) => {
+    req.collection = db.collection(collectionName)
+    return next()
+})
+
+// Serve the main frontend page
 app.get('/', (req, res) => {
-    res.send('Welcome to the Webstore API! Use endpoints like /collection/{collectionName}');
+  res.sendFile(path.join(__dirname, '../frontend/lab.html'));
 });
 
-// Middleware to extract collection by name
-app.param('collectionName', (req, res, next, collectionName) => {
-    req.collection = db.collection(collectionName);
-    next();
+// Route to retrieve all products
+app.get('/products', (req, res, next) => {
+  db.collection('products')
+    .find({})
+    .toArray((err, results) => {
+      if (err) return next(err);
+      res.send(results);
+    });
 });
 // Create a new document in a collection (Order Creation)
 app.post('/collection/orders', async (req, res, next) => {
