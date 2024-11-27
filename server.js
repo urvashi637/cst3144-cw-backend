@@ -119,6 +119,64 @@ app.post('/collection/orders', async (req, res, next) => {
       res.status(500).send({ error: 'Failed to process the order' });
     }
   });
+
+  // Update a document in a collection by ID or manually update inventory
+app.put('/collection/:collectionName/:id', async (req, res, next) => {
+    const { collectionName, id } = req.params;
+    const { quantity } = req.body; // If the request is for inventory update, this will be the quantity
+  
+    // If the collection is 'products', we handle inventory updates
+    if (collectionName === 'products' && quantity !== undefined) {
+      if (typeof quantity !== 'number') {
+        return res.status(400).send({ error: 'Quantity must be a number' });
+      }
+  
+      try {
+        const product = await db.collection('products').findOne({ _id: new ObjectID(id) });
+  
+        if (!product) {
+          return res.status(404).send({ error: 'Product not found' });
+        }
+  
+        const newAvailableInventory = product.availableInventory + quantity;
+  
+        // Only update if the new inventory is valid
+        if (newAvailableInventory < 0) {
+          return res.status(400).send({ error: 'Insufficient inventory' });
+        }
+  
+        const updateResult = await db.collection('products').updateOne(
+          { _id: new ObjectID(id) },
+          { $set: { availableInventory: newAvailableInventory } }
+        );
+  
+        if (updateResult.modifiedCount === 0) {
+          return res.status(400).send({ error: 'Failed to update inventory' });
+        }
+  
+        return res.status(200).send({
+          msg: 'Inventory updated successfully',
+          updatedInventory: newAvailableInventory
+        });
+      } catch (err) {
+        console.error("Error updating inventory:", err);
+        return res.status(500).send({ error: 'Failed to update inventory' });
+      }
+    } else {
+      // General document update in any collection
+      try {
+        const result = await db.collection(collectionName).updateOne(
+          { _id: new ObjectID(id) },
+          { $set: req.body },
+          { safe: true, multi: false }
+        );
+  
+        res.send(result.modifiedCount === 1 ? { msg: 'success' } : { msg: 'error' });
+      } catch (err) {
+        return next(err);
+      }
+    }
+  });
   
 // Error handling middleware
 app.use((err, req, res, next) => {
