@@ -47,6 +47,11 @@ app.get('/', (req, res) => {
     res.send('Welcome to the Webstore API! Use endpoints like /collection/{collectionName}');
 });
 
+// Middleware to extract collection by name
+app.param('collectionName', (req, res, next, collectionName) => {
+    req.collection = db.collection(collectionName);
+    next();
+});
 // Create a new document in a collection (Order Creation)
 app.post('/collection/orders', async (req, res, next) => {
     const order = req.body;
