@@ -3,7 +3,7 @@
     "author": "Urvashi Soni",
     "version": "0.2.0",
     "scripts": {
-        "start": "node express.js"
+        "start": "node server.js"
     },
     "dependencies": {
         "body-parser": "^1.20.3",
