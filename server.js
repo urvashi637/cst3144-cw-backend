@@ -228,6 +228,53 @@ app.put('/collection/:collectionName/:id', async (req, res, next) => {
       }
     }
   });
+
+  app.get('/search', async (req, res) => {
+    try {
+      const { id, quantity, subject, location } = req.query;
+  
+      const query = {};
+  
+      // Filter by id if provided
+      if (id) {
+        if (!ObjectId.isValid(id)) {
+          return res.status(400).json({ error: 'Invalid ID format' });
+        }
+        query._id = new ObjectId(id);  // Query by ObjectId
+      }
+  
+      // Filter by availableInventory (quantity)
+      if (quantity) {
+        const parsedQuantity = parseInt(quantity, 10);
+        if (isNaN(parsedQuantity)) {
+          return res.status(400).json({ error: 'Invalid quantity format' });
+        }
+        query.availableInventory = { $gte: parsedQuantity };  // Ensure inventory is greater than or equal to quantity
+      }
+  
+      // Filter by subject (case-insensitive)
+      if (subject) {
+        query.subject = { $regex: subject, $options: 'i' };  // Case-insensitive search for subject
+      }
+  
+      // Filter by location (case-insensitive)
+      if (location) {
+        query.location = { $regex: location, $options: 'i' };  // Case-insensitive search for location
+      }
+  
+      // Query the database
+      const results = await db.collection('products').find(query).toArray();
+  
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'No matching items found' });
+      }
+  
+      res.status(200).json(results);
+    } catch (err) {
+      console.error('Error in /search route:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
   
 // Error handling middleware
 app.use((err, req, res, next) => {
