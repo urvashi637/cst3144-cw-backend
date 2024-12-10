@@ -7,6 +7,13 @@ const { MongoClient, ObjectID } = require('mongodb');
 // Initialize the Express application
 const app = express();
 
+// Logger middleware
+app.use((req, res, next) => {
+  const now = new Date().toISOString();
+  console.log(`[${now}] ${req.method} ${req.url}`);
+  next(); // Pass control to the next middleware or route
+});
+
 // Middleware for parsing JSON
 app.use(express.json());
 
@@ -37,6 +44,7 @@ app.use('/image', (req, res) => {
         }
     })
 })
+                                                                
 // Connect to MongoDB
 let db;
 MongoClient.connect(
@@ -51,23 +59,23 @@ MongoClient.connect(
     db = client.db('webstore');
   }
 );
-// Root endpoint
-app.get('/', (req, res) => {
-    res.send('Welcome to the Webstore API! Use endpoints like /collection/{collectionName}');
-});
-
-// Middleware to extract collection by name
-app.param('collectionName', (req, res, next, collectionName) => {
-    req.collection = db.collection(collectionName);
-    next();
-});
-
 // Retrieve all documents from a collection
 app.get('/collection/:collectionName', (req, res, next) => {
     req.collection.find({}).toArray((err, results) => {
         if (err) return next(err);
         res.send(results);
     });
+});
+
+// Root endpoint changed to /api
+app.get('/api', (req, res) => {
+  res.send('Welcome to the Webstore API! Use endpoints like /collection/{collectionName}');
+});
+
+// Middleware to extract collection by name
+app.param('collectionName', (req, res, next, collectionName) => {
+    req.collection = db.collection(collectionName);
+    next();
 });
 
 // Retrieve a specific document by ID
@@ -93,6 +101,7 @@ app.get('/products', (req, res, next) => {
       res.send(results);
     });
 });
+
 // Create a new document in a collection (Order Creation)
 app.post('/collection/orders', async (req, res, next) => {
     const order = req.body;
@@ -237,10 +246,10 @@ app.put('/collection/:collectionName/:id', async (req, res, next) => {
   
       // Filter by id if provided
       if (id) {
-        if (!ObjectId.isValid(id)) {
+        if (!ObjectID.isValid(id)) {
           return res.status(400).json({ error: 'Invalid ID format' });
         }
-        query._id = new ObjectId(id);  // Query by ObjectId
+        query._id = new ObjectID(id); // Query by ObjectId
       }
   
       // Filter by availableInventory (quantity)
@@ -249,17 +258,17 @@ app.put('/collection/:collectionName/:id', async (req, res, next) => {
         if (isNaN(parsedQuantity)) {
           return res.status(400).json({ error: 'Invalid quantity format' });
         }
-        query.availableInventory = { $gte: parsedQuantity };  // Ensure inventory is greater than or equal to quantity
+        query.availableInventory = { $gte: parsedQuantity }; // Inventory >= quantity
       }
   
       // Filter by subject (case-insensitive)
       if (subject) {
-        query.subject = { $regex: subject, $options: 'i' };  // Case-insensitive search for subject
+        query.subject = { $regex: new RegExp(subject, 'i') }; // Regex for case-insensitive match
       }
   
       // Filter by location (case-insensitive)
       if (location) {
-        query.location = { $regex: location, $options: 'i' };  // Case-insensitive search for location
+        query.location = { $regex: new RegExp(location, 'i') }; // Regex for case-insensitive match
       }
   
       // Query the database
